@@ -1,0 +1,11 @@
+node_modules/
+playwright-report/
+test-results/
+results/
+blob-report/
+.features-gen/
+.auth/
+.env
+mobile/node_modules/
+mobile/apps/*.apk
+mobile/allure-results/

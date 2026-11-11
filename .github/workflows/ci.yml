@@ -1,0 +1,117 @@
+name: QA Automation
+
+# Estrategia de ejecución:
+#  - Pull request  -> typecheck + API + smoke E2E (feedback rápido, bloquea el merge si falla)
+#  - Push a main   -> regresión completa en paralelo (sharding en 2 máquinas) + BDD
+#  - Nightly       -> cross-browser + web móvil emulada
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BASE_URL: ${{ vars.BASE_URL || 'https://automationintesting.online' }}
+  ADMIN_USER: ${{ secrets.ADMIN_USER || 'admin' }}
+  ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || 'password' }}
+
+jobs:
+  pr-checks:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx playwright install --with-deps chromium
+      - name: API tests
+        run: npx playwright test --project=api
+      - name: Smoke E2E
+        run: npx playwright test --project=e2e-chromium --grep @smoke
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: pr-report
+          path: playwright-report
+          retention-days: 7
+
+  regression:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1/2, 2/2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx bddgen
+      - name: Regresión (shard ${{ matrix.shard }})
+        run: npx playwright test --project=api --project=e2e-chromium --project=bdd --shard=${{ matrix.shard }} --reporter=blob
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-${{ strategy.job-index }}
+          path: blob-report
+          retention-days: 3
+
+  merge-reports:
+    if: ${{ !cancelled() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    needs: regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+      - run: npx playwright merge-reports --reporter html ./all-blob-reports
+      - uses: actions/upload-artifact@v4
+        with:
+          name: regression-html-report
+          path: playwright-report
+          retention-days: 14
+
+  nightly:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - name: Cross-browser + web móvil
+        run: npx playwright test --project=e2e-firefox --project=mobile-web
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: nightly-report
+          path: playwright-report
+          retention-days: 14
