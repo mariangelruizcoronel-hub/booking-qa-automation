@@ -33,8 +33,22 @@ export class ReservationPage {
     this.priceSummary = page.getByRole('heading', { name: 'Price Summary' }).locator('..');
   }
 
-  /** Entrar directamente con fechas en la URL: técnica para preparar el estado sin pasar por la UI. */
-  async goto(roomId: number, dates: BookingDates) {
+  /**
+   * Entrar directamente con fechas en la URL: técnica para preparar el estado sin pasar por la UI.
+   *
+   * stubRoomDetail (por defecto true): en la demo pública GET /api/room/{id} devuelve 500 (bug H-02)
+   * y la página se queda cargando para siempre. Para seguir validando el flujo de reserva,
+   * AISLAMOS el frontend de esa dependencia rota: respondemos ese endpoint con los datos reales
+   * del listado (/api/room, que sí funciona). La creación de la reserva (POST) sigue siendo real.
+   * Con stubRoomDetail=false se prueba la página tal cual (ver test marcado como bug conocido).
+   */
+  async goto(roomId: number, dates: BookingDates, { stubRoomDetail = true } = {}) {
+    if (stubRoomDetail) {
+      const list = await this.page.request.get('/api/room');
+      const { rooms } = await list.json();
+      const room = rooms.find((r: { roomid: number }) => r.roomid === roomId);
+      await this.page.route(new RegExp(`/api/room/${roomId}$`), (route) => route.fulfill({ json: room }));
+    }
     await this.page.goto(`/reservation/${roomId}?checkin=${dates.checkin}&checkout=${dates.checkout}`);
     await expect(this.reserveButton).toBeVisible();
   }

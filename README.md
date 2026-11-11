@@ -14,7 +14,7 @@ Elegí este producto porque su flujo es el mismo que el de un e-commerce de segu
 | Login reutilizable, fixtures, datos de test | `tests/setup/auth.setup.ts` (storageState), `src/fixtures/`, `src/data/factories.ts` |
 | **CI/CD** con GitHub Actions | `.github/workflows/ci.yml` (PR / regresión con sharding / nightly) |
 | **Móvil**: web móvil emulada + app nativa con **Appium** | proyecto `mobile-web` + carpeta `mobile/` (WebdriverIO + UiAutomator2) |
-| Estrategia y hallazgos | `docs/estrategia.md`, `docs/hallazgos.md` |
+| Estrategia y **bugs reales encontrados** | `docs/estrategia.md`, `docs/hallazgos.md` (tests `@known-bug` con `test.fail()`) |
 
 ## Estructura
 
@@ -54,6 +54,18 @@ npm test                        # Todo
 npm run report                  # Abrir el reporte HTML (con trace viewer)
 ```
 
+### Modo presentación
+
+```bash
+npm run demo          # navegador visible a cámara lenta: flujos clave
+npm run demo:mobile   # lo mismo en un móvil emulado
+npm run demo:ui       # modo UI de Playwright (lanzar tests con un clic, timeline, pick locator)
+npm run demo:full     # API + E2E + BDD y abre el "Sprint Testing · Resumen final"
+npm run summary       # abrir results/sprint-summary.html
+```
+
+Cada ejecución genera `results/sprint-summary.md` y `.html` con el veredicto, las métricas, la **cobertura por criterio de aceptación** (los tests llevan la etiqueta `@AC1`… `@AC9`) y los bugs abiertos. En GitHub Actions aparece en el resumen del job. Guion completo: `docs/DEMO.md`.
+
 > La demo pública se reinicia periódicamente y la comparte mucha gente. Si hay inestabilidad, se puede levantar en local (ver el repo de restful-booker-platform) y apuntar `BASE_URL=http://localhost:3003`.
 
 ### Móvil (Appium)
@@ -70,7 +82,7 @@ npm test
 
 ## Decisiones de diseño (lo que contaría en una entrevista)
 
-1. **Pirámide de tests.** 22 tests de API frente a 9 de UI. La API cubre reglas de negocio y combinaciones (milisegundos, estable). La UI solo cubre los flujos críticos.
+1. **Pirámide de tests.** 25 tests de API frente a 10 de UI. La API cubre reglas de negocio y combinaciones (milisegundos, estable). La UI solo cubre los flujos críticos.
 2. **Preparar el estado por API, verificar en la UI.** El test de backoffice crea el mensaje por API y solo comprueba en pantalla que aparece. La reserva entra con las fechas en la URL en vez de pelear con el calendario.
 3. **Selectores robustos.** `getByRole`, `getByPlaceholder`, `data-testid` y accessibility id en móvil. Sin XPath ni clases CSS.
 4. **Tests independientes y paralelizables.** Cada test genera sus propios datos (faker + fechas aleatorias en el futuro). La fixture `createdBookings` borra lo creado en el teardown.
@@ -79,7 +91,9 @@ npm test
 7. **Mocks.** `page.route()` simula un 500 del backend para comprobar que nunca se muestra una confirmación falsa. Es el equivalente a simular la pasarela de pago caída.
 8. **Login una sola vez.** El proyecto `setup` guarda la sesión de admin y los tests de backoffice la reutilizan.
 9. **Anti-flaky.** `retries: 1` solo en CI para *detectar* tests inestables (salen marcados como "flaky"), con trace, vídeo y captura en el primer fallo.
-10. **CI por capas.** En la PR: typecheck + API + smoke (bloquea el merge). En main: regresión completa con sharding y reporte unificado. Nightly: Firefox + móvil.
+10. **Bugs conocidos bajo control.** Los bugs encontrados (ver `docs/hallazgos.md`) tienen su test marcado con `test.fail()`: la suite sigue en verde y, si alguien arregla el bug, Playwright avisa.
+11. **Aislar dependencias rotas.** La demo devuelve 500 al pedir el detalle de una habitación. Los E2E responden ese endpoint con un stub (datos reales del listado) para seguir probando el flujo de reserva.
+12. **CI por capas.** En la PR: typecheck + API + smoke (bloquea el merge). En main: regresión completa con sharding y reporte unificado. Nightly: Firefox + móvil.
 
 ## Cómo aplicaría esto a un producto de seguros de viaje
 

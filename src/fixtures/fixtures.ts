@@ -30,13 +30,20 @@ export const test = base.extend<Fixtures>({
     await use(await api.getAdminToken());
   },
 
-  createdBookings: async ({ api }, use) => {
+  createdBookings: async ({ api }, use, testInfo) => {
     const ids: number[] = [];
     await use(ids);
-    // Teardown: dejar el entorno limpio para no contaminar otros tests
+    // Teardown "best effort": intentamos dejar el entorno limpio, pero un fallo de limpieza
+    // NO debe tumbar un test que ha pasado. Lo dejamos anotado en el reporte.
+    // (En la demo pública DELETE /api/booking/{id} devuelve 500: ver docs/hallazgos.md H-01)
     if (ids.length) {
       const token = await api.getAdminToken();
-      for (const id of ids) await api.deleteBooking(id, token);
+      for (const id of ids) {
+        const res = await api.deleteBooking(id, token);
+        if (!res.ok()) {
+          testInfo.annotations.push({ type: 'cleanup', description: `No se pudo borrar la reserva ${id} (HTTP ${res.status()})` });
+        }
+      }
     }
   },
 });

@@ -50,7 +50,7 @@ Then('el resultado de la reserva es {string}', async ({ reservationPage }, resul
 Then(
   'el total es el precio por noche por {int} noches más {int} de tasas',
   async ({ reservationPage, api }, nights: number, fees: number) => {
-    const room = await (await api.getRoom(1)).json();
+    const room = await api.getRoomFromList(1);
     expect(await reservationPage.totalPrice()).toBe(room.roomPrice * nights + fees);
   },
 );

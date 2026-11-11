@@ -12,6 +12,11 @@
     "test:bdd": "npm run bdd:gen && playwright test --project=bdd",
     "bdd:gen": "bddgen",
     "report": "playwright show-report",
+    "summary": "open results/sprint-summary.html || xdg-open results/sprint-summary.html",
+    "demo": "DEMO=1 playwright test --project=e2e-chromium --grep \"@smoke|@AC6|@AC7\"",
+    "demo:mobile": "DEMO=1 playwright test --project=mobile-web",
+    "demo:ui": "npm run bdd:gen && playwright test --ui",
+    "demo:full": "npm run bdd:gen && playwright test --project=api --project=e2e-chromium --project=bdd; npm run summary",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },

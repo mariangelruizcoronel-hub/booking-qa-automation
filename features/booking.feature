@@ -9,15 +9,17 @@ Feature: Reservar una habitación
   Background:
     Given hay una habitación disponible para 2 noches
 
-  @smoke
+  @smoke @AC3
   Scenario: Reserva confirmada con datos válidos
     When introduzco mis datos de huésped válidos
     And confirmo la reserva
     Then veo que la reserva está confirmada
 
+  @AC6
   Scenario: El precio total incluye las tasas
     Then el total es el precio por noche por 2 noches más 40 de tasas
 
+  @AC4
   Scenario Outline: Validación de la longitud del nombre
     When introduzco el nombre "<nombre>" y el resto de datos válidos
     And confirmo la reserva

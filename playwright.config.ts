@@ -3,6 +3,8 @@ import { defineBddConfig } from 'playwright-bdd';
 import 'dotenv/config';
 
 const BASE_URL = process.env.BASE_URL ?? 'https://automationintesting.online';
+// DEMO=1 -> navegador visible y a cámara lenta, para enseñar los tests en directo
+const DEMO = !!process.env.DEMO;
 
 // BDD: los .feature (Gherkin) se convierten en tests de Playwright con `npx bddgen`
 const bddTestDir = defineBddConfig({
@@ -20,15 +22,19 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI
-    ? [['html', { open: 'never' }], ['junit', { outputFile: 'results/junit.xml' }], ['github']]
-    : [['html', { open: 'never' }], ['list']],
+    ? [['html', { open: 'never' }], ['junit', { outputFile: 'results/junit.xml' }], ['github'], ['./src/reporting/sprint-summary-reporter.ts']]
+    : [['html', { open: 'never' }], ['list'], ['./src/reporting/sprint-summary-reporter.ts']],
   use: {
     baseURL: BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     testIdAttribute: 'data-testid',
+    headless: !DEMO,
+    launchOptions: { slowMo: DEMO ? 700 : 0 },
+    ...(DEMO ? { trace: 'on' as const, video: 'on' as const } : {}),
   },
+  ...(DEMO ? { workers: 1, fullyParallel: false } : {}),
   projects: [
     // 1) Login de admin una sola vez -> guarda la sesión (storageState)
     { name: 'setup', testDir: 'tests/setup', testMatch: /.*\.setup\.ts/ },

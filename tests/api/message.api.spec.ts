@@ -3,7 +3,7 @@ import { buildMessage } from '../../src/data/factories';
 
 /** Formulario de contacto = equivalente a "abrir una consulta / siniestro". */
 test.describe('API Message @api', () => {
-  test('enviar mensaje válido -> 200', async ({ api }) => {
+  test('enviar mensaje válido -> 200 @AC8', async ({ api }) => {
     const res = await api.sendMessage(buildMessage());
     expect(res.status()).toBe(200);
   });
@@ -17,7 +17,7 @@ test.describe('API Message @api', () => {
   ] as const;
 
   for (const c of invalid) {
-    test(`${c.field} inválido -> 400 "${c.error}"`, async ({ api }) => {
+    test(`${c.field} inválido -> 400 "${c.error}" @AC8`, async ({ api }) => {
       const res = await api.sendMessage(buildMessage({ [c.field]: c.value }));
       expect(res.status()).toBe(400);
       expect(JSON.stringify(await res.json())).toContain(c.error);

@@ -7,7 +7,7 @@ import { buildBooking, futureStay } from '../../src/data/factories';
  * En E2E solo los flujos críticos: pocos tests, muy buenos.
  */
 test.describe('Reserva E2E @e2e', () => {
-  test('el usuario reserva una habitación de principio a fin @smoke @mobile', async ({
+  test('el usuario reserva una habitación de principio a fin @smoke @mobile @AC3', async ({
     reservationPage,
     page,
   }) => {
@@ -33,7 +33,7 @@ test.describe('Reserva E2E @e2e', () => {
     });
   });
 
-  test('buscar disponibilidad muestra habitaciones con enlace de reserva', async ({ homePage, page }) => {
+  test('buscar disponibilidad muestra habitaciones con enlace de reserva @AC1', async ({ homePage, page }) => {
     const dates = futureStay(3);
     await homePage.goto();
 
@@ -45,8 +45,8 @@ test.describe('Reserva E2E @e2e', () => {
     await expect(homePage.bookNowLinks.first()).toHaveAttribute('href', /\/reservation\/\d+/);
   });
 
-  test('el resumen de precio suma noches + tasas (regla de negocio)', async ({ reservationPage, api }) => {
-    const room = (await (await api.getRoom(1)).json()) as { roomPrice: number };
+  test('el resumen de precio suma noches + tasas (regla de negocio) @AC6', async ({ reservationPage, api }) => {
+    const room = await api.getRoomFromList(1);
     const nights = 3;
 
     await reservationPage.goto(1, futureStay(nights));
@@ -55,7 +55,7 @@ test.describe('Reserva E2E @e2e', () => {
     expect(await reservationPage.totalPrice()).toBe(room.roomPrice * nights + 40);
   });
 
-  test('no confirma la reserva si faltan datos obligatorios', async ({ reservationPage, page }) => {
+  test('no confirma la reserva si faltan datos obligatorios @AC4', async ({ reservationPage, page }) => {
     await reservationPage.goto(1, futureStay());
     await reservationPage.startReservation();
     await reservationPage.fillGuest({ firstname: 'Al' }); // 2 caracteres: por debajo del mínimo
@@ -71,13 +71,13 @@ test.describe('Reserva E2E @e2e', () => {
    * MOCK con page.route: simulamos que el backend falla (500) sin depender de que falle de verdad.
    * En Heymondo: simular pasarela de pago caída o tarjeta rechazada.
    */
-  test('si el backend de reservas falla, no se muestra una confirmación falsa', async ({
+  test('si el backend de reservas falla, no se muestra una confirmación falsa @AC7', async ({
     reservationPage,
     page,
   }) => {
     await page.route('**/api/booking', (route) =>
       route.request().method() === 'POST'
-        ? route.fulfill({ status: 500, json: { fieldErrors: ['Servicio no disponible'] } })
+        ? route.fulfill({ status: 500, json: { errors: ['Servicio no disponible'] } })
         : route.continue(),
     );
 
@@ -87,5 +87,11 @@ test.describe('Reserva E2E @e2e', () => {
     await reservationPage.confirm();
 
     await expect(reservationPage.confirmation).toBeHidden();
+  });
+
+  test('la página de reserva carga sin stubs (H-02) @known-bug @AC3', async ({ reservationPage }) => {
+    test.fail(true, 'H-02: GET /api/room/{id} devuelve 500 y la página se queda cargando');
+    test.setTimeout(20_000);
+    await reservationPage.goto(1, futureStay(), { stubRoomDetail: false });
   });
 });
