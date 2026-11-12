@@ -1,4 +1,5 @@
 import path from 'node:path';
+import fs from 'node:fs';
 
 /**
  * Appium + WebdriverIO para Android.
@@ -35,6 +36,7 @@ export const config: WebdriverIO.Config = {
   // Evidencia en caso de fallo: captura de pantalla
   afterTest: async function (test, _context, { passed }) {
     if (!passed) {
+      fs.mkdirSync('./errorShots', { recursive: true });
       await browser.saveScreenshot(`./errorShots/${test.title.replace(/\s+/g, '_')}.png`);
     }
   },

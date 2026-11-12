@@ -1,4 +1,13 @@
-import { expect } from '@wdio/globals';
+import { expect, driver } from '@wdio/globals';
+
+const APP_ID = 'com.saucelabs.mydemoapp.rn';
+
+/** Cada test empieza con la app limpia (sin sesión ni carrito): tests independientes entre sí. */
+async function restartApp() {
+  await driver.terminateApp(APP_ID);
+  await driver.execute('mobile: clearApp', { appId: APP_ID });
+  await driver.activateApp(APP_ID);
+}
 import { CatalogScreen, ProductScreen, CartScreen, LoginScreen, CheckoutScreen } from '../screens/screens';
 
 /**
@@ -7,6 +16,8 @@ import { CatalogScreen, ProductScreen, CartScreen, LoginScreen, CheckoutScreen }
  * Datos de prueba: usuario y tarjeta FICTICIOS que ofrece la propia app de demo.
  */
 describe('App móvil - compra de principio a fin', () => {
+  beforeEach(restartApp);
+
   it('un usuario logueado completa el checkout', async () => {
     await CatalogScreen.openFirstProduct();
 
@@ -40,6 +51,8 @@ describe('App móvil - compra de principio a fin', () => {
 });
 
 describe('App móvil - login', () => {
+  beforeEach(restartApp);
+
   it('un usuario bloqueado ve un mensaje de error', async () => {
     await CatalogScreen.openFirstProduct();
     await ProductScreen.addToCart().click();
@@ -48,6 +61,7 @@ describe('App móvil - login', () => {
 
     await LoginScreen.login('alice@example.com', '10203040');
 
-    await expect(LoginScreen.error()).toHaveText(expect.stringContaining('locked out'));
+    await expect(LoginScreen.error()).toBeDisplayed();
+    await expect(LoginScreen.errorText('locked out')).toBeDisplayed();
   });
 });
