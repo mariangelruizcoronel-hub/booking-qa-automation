@@ -7,14 +7,13 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
     "paths": {
-      "@pages/*": ["src/pages/*"],
-      "@api/*": ["src/api/*"],
-      "@data/*": ["src/data/*"],
-      "@fixtures/*": ["src/fixtures/*"]
+      "@pages/*": ["./src/pages/*"],
+      "@api/*": ["./src/api/*"],
+      "@data/*": ["./src/data/*"],
+      "@fixtures/*": ["./src/fixtures/*"]
     }
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "features/**/*.ts", "playwright.config.ts"],
+  "include": ["./src/**/*.ts", "tests/**/*.ts", "features/**/*.ts", "playwright.config.ts"],
   "exclude": ["node_modules", "mobile", ".features-gen"]
 }
