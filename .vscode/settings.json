@@ -1,0 +1,7 @@
+{
+  "playwright.reuseBrowser": false,
+  "playwright.showTrace": true,
+  "cucumberautocomplete.steps": ["features/steps/*.ts"],
+  "cucumberautocomplete.syncfeatures": "features/*.feature",
+  "files.associations": { "*.feature": "feature" }
+}
